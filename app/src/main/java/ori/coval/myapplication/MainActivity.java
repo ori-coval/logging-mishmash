@@ -1,81 +1,156 @@
 package ori.coval.myapplication;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.FileProvider;
 
-import java.io.Closeable;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ByteArrayOutputStream;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.charset.StandardCharsets;
+import java.util.Random;
+import java.util.function.DoubleSupplier;
 
 public class MainActivity extends AppCompatActivity {
-    private WpiLog logger;
-    private boolean isRunning = false;
-    private Button button;
-    private Handler handler = new Handler();
-    Runnable runnableTask;
-    double rotation = 0;
-    double startTime;
+    @NoLog
+    private static final String LOG_FILENAME = "test.wpilog";
+    private boolean isLogging = false;
+
+    // Handler on main thread for scheduling
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private Runnable logRunnable;
+    TelemetryManager tm;
+
+    private double rotation = 0;
+    private double x = 0;
+    private double y = 0;
+    private double[] pose = new double[3];
+
+    public static double yststic = 0;
+
+    DoubleSupplier xsupplier = SupplierLog.wrap("xSupplier",()->x);
+    
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
-        button = findViewById(R.id.btnToggle);
+        // Vertical layout
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
 
-        startTime = System.currentTimeMillis()/1000.0;
+        // Toggle button for start/stop logging
+        Button toggleBtn = new Button(this);
+        toggleBtn.setText("Start Logging");
+        toggleBtn.setOnClickListener(v -> {
+            if (!isLogging) {
+                isLogging = true;
+                toggleBtn.setText("Stop Logging");
+                startLogging();
+            } else {
+                isLogging = false;
+                toggleBtn.setText("Start Logging");
+                stopLogging();
+            }
+        });
+        layout.addView(toggleBtn);
 
-        runnableTask = new Runnable() {
+        // Optional: share button to pull the file
+        Button shareBtn = new Button(this);
+        shareBtn.setText("Share Log File");
+        shareBtn.setOnClickListener(v -> shareLogFile());
+        layout.addView(shareBtn);
+
+        setContentView(layout);
+
+        // Initialize the logger singleton
+        try {
+            File outFile = new File(
+                    getExternalFilesDir(null),
+                    LOG_FILENAME
+            );
+            WpiLog.getInstance().setup(outFile, "Android Continuous Test");
+            Toast.makeText(this,
+                    "Logger initialized at:\n" + outFile.getAbsolutePath(),
+                    Toast.LENGTH_LONG
+            ).show();
+        } catch (IOException e) {
+            Toast.makeText(this, "Failed to init logger", Toast.LENGTH_LONG).show();
+            e.printStackTrace();
+        }
+
+        // Define the periodic logging task (every 1s)
+        logRunnable = new Runnable() {
             @Override
             public void run() {
-
-                WpiLog.getInstance().log("time", System.currentTimeMillis()/1000);
-                rotation += startTime - System.currentTimeMillis()/1000.0;
-                WpiLog.getInstance().log("pose", new double[]{2,2,rotation});
-
-                if(isRunning){
-                    handler.postDelayed(this,500);
+                try {
+//                    double rnd = Math.random() * 100;
+//                    WpiLog.getInstance().log("randomDouble", rnd);
+                    rotation+=Math.PI/1000;
+                    x += Math.random()/8.5;
+                    y += Math.random()/8.5;
+                    yststic = y;
+                    pose = new double[]{x,y,rotation};
+                    xsupplier.getAsDouble();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                if (isLogging) {
+                    handler.postDelayed(this, 1);
                 }
             }
         };
 
-        button.setOnClickListener(v -> {
-            Toast.makeText(this, "Logged current time", Toast.LENGTH_SHORT).show();
 
-            if(isRunning){
-                isRunning = false;
-                button.setText("start logging");
-            }
-            else {
-                isRunning = true;
-                button.setText("stop Logging");
-                handler.post(runnableTask);
-            }
-        });
+        tm = new TelemetryManager(100); // log every 100ms
+        tm.register(this);
+        tm.start();
+    }
 
+    /** Kick off the repeating log task */
+    private void startLogging() {
+        handler.post(logRunnable);
+    }
 
+    /** Stop the repeating log task */
+    private void stopLogging() {
+        handler.removeCallbacks(logRunnable);
+        tm.stop();
         try {
-            File file = new File(getExternalFilesDir(null), "test.wpilog");
-            WpiLog.getInstance().setup(file, "Android WpiLog Test");
+            WpiLog.getInstance().close();
         } catch (IOException e) {
-            e.printStackTrace();
-            Toast.makeText(this, "Logger init failed", Toast.LENGTH_LONG).show();
+            throw new RuntimeException(e);
         }
     }
 
-
+    /** Fire a share Intent for the .wpilog file */
+    private void shareLogFile() {
+        File file = new File(getExternalFilesDir(null), LOG_FILENAME);
+        Uri uri = FileProvider.getUriForFile(
+                this,
+                getPackageName() + ".fileprovider",
+                file
+        );
+        Intent share = new Intent(Intent.ACTION_SEND)
+                .setType("*/*")
+                .putExtra(Intent.EXTRA_STREAM, uri)
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        startActivity(Intent.createChooser(share, "Share WPILOG"));
+    }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        stopLogging();
+        try {
+            WpiLog.getInstance().close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

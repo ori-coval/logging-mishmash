@@ -14,6 +14,7 @@ public class WpiLog implements Closeable {
     private final HashMap<String, Integer> recordIDs;
     private int largestId = 0;
     private static WpiLog instance = null;
+    private long startTime;
 
     public static synchronized WpiLog getInstance() {
         if (instance == null)
@@ -24,6 +25,7 @@ public class WpiLog implements Closeable {
 
     private WpiLog() {
         recordIDs = new HashMap<>();
+        startTime = System.nanoTime() / 1000;
     }
 
     public void setup(File file, String extraHeader) throws IOException {
@@ -319,7 +321,7 @@ public class WpiLog implements Closeable {
     }
 
     private long nowMicros() {
-        return System.nanoTime() / 1000;
+        return System.nanoTime() / 1000 - startTime;
     }
 
     private byte[] le16(short v) {
