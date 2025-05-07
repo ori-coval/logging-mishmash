@@ -1,12 +1,8 @@
-package ori.coval.myapplication;
+package FtcLoggerTest.myapplication;
 
 import android.os.Handler;
 import android.os.Looper;
 import java.io.IOException;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;

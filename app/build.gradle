@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace 'ori.coval.myapplication'
+    namespace 'FtcLoggerTest.myapplication'
     compileSdk 34
 
     defaultConfig {
-        applicationId "ori.coval.myapplication"
+        applicationId "FtcLoggerTest.myapplication"
         minSdk 24
         targetSdk 34
         versionCode 1

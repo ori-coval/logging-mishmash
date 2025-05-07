@@ -1,4 +1,4 @@
-package ori.coval.myapplication;
+package FtcLoggerTest.coval.myapplication;
 
 import org.junit.Test;
 

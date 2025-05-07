@@ -1,4 +1,4 @@
-package ori.coval.myapplication;
+package FtcLoggerTest.myapplication;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

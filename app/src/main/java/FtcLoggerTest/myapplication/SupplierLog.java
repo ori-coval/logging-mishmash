@@ -1,4 +1,4 @@
-package ori.coval.myapplication;
+package FtcLoggerTest.myapplication;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;

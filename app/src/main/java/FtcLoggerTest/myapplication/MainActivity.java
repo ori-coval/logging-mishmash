@@ -1,4 +1,4 @@
-package ori.coval.myapplication;
+package FtcLoggerTest.myapplication;
 
 import android.os.Bundle;
 import android.os.Handler;

@@ -1,4 +1,4 @@
-package ori.coval.myapplication;
+package FtcLoggerTest.myapplication;
 
 import android.content.Context;
 
@@ -21,6 +21,6 @@ public class ExampleInstrumentedTest {
     public void useAppContext() {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        assertEquals("ori.coval.myapplication", appContext.getPackageName());
+        assertEquals("FtcLoggerTest.myapplication", appContext.getPackageName());
     }
 }
