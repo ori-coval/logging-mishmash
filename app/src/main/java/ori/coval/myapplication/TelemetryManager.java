@@ -16,20 +16,13 @@ import java.util.function.LongSupplier;
 import java.util.function.DoubleSupplier;
 
 /**
- * Annotation to exclude classes or fields from auto-logging.
- * Apply to a class to skip logging all its fields,
- * or apply to specific fields to skip just those.
- */
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE, ElementType.FIELD})
-@interface NoLog {}
-
-/**
  * TelemetryManager: automatically logs all fields on registered
  * objects and any registered suppliers at a fixed interval (ms)
  * via WpiLog.getInstance().log(...).
  * Classes or fields annotated @NoLog will be excluded from field-logging.
  */
+
+//TODO: make telemetry manager singleton
 public class TelemetryManager {
     private final List<Object> targets = new ArrayList<>();
     private final List<BooleanSupplierEntry> boolSuppliers = new ArrayList<>();
@@ -37,7 +30,7 @@ public class TelemetryManager {
     private final List<LongSupplierEntry> longSuppliers = new ArrayList<>();
     private final List<DoubleSupplierEntry> doubleSuppliers = new ArrayList<>();
     private final Handler handler = new Handler(Looper.getMainLooper());
-    private final long periodMs;
+    private long periodMs;
 
     private final Runnable task = new Runnable() {
         @Override
@@ -48,10 +41,27 @@ public class TelemetryManager {
         }
     };
 
+    private static TelemetryManager instance;
+
+    public static synchronized TelemetryManager getInstance(){
+        if(instance == null){
+            instance = new TelemetryManager(10);
+        }
+        return instance;
+    }
+
     /**
      * @param periodMs Interval between logs in milliseconds.
      */
-    public TelemetryManager(long periodMs) {
+    private TelemetryManager(long periodMs) {
+        this.periodMs = periodMs;
+    }
+
+    /**
+     * sets the amount of time in ms between each log
+     * @param periodMs how many milliseconds between  each log
+     */
+    private void setLoggingSpeed(long periodMs){
         this.periodMs = periodMs;
     }
 

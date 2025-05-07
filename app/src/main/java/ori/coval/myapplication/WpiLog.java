@@ -1,5 +1,8 @@
 package ori.coval.myapplication;
 
+import android.content.Context;
+import android.os.Environment;
+
 import java.io.*;
 import java.nio.*;
 import java.nio.charset.StandardCharsets;
@@ -9,6 +12,7 @@ import java.util.HashMap;
  * WpiLog: write WPILOG-format files for Advantage Scope.
  * Supports scalar and array data types.
  */
+//TODO: cahnge all the e.printStackTrace() for a better way of logging
 public class WpiLog implements Closeable {
     private FileOutputStream fos;
     private final HashMap<String, Integer> recordIDs;
@@ -17,8 +21,9 @@ public class WpiLog implements Closeable {
     private long startTime;
 
     public static synchronized WpiLog getInstance() {
-        if (instance == null)
+        if (instance == null){
             instance = new WpiLog();
+        }
 
         return instance;
     }
@@ -28,9 +33,49 @@ public class WpiLog implements Closeable {
         startTime = System.nanoTime() / 1000;
     }
 
-    public void setup(File file, String extraHeader) throws IOException {
-        fos = new FileOutputStream(file);
-        writeHeader(extraHeader != null ? extraHeader : "");
+    /**
+     * Set up logging to a file named 'robot.wpilog' in SD or internal.
+     */
+    //TODO: replace Context with HardwareMap for use with robot
+    //TODO:change the defult naming to date and time
+    public void setup(Context hardwareMap) {
+        setup(hardwareMap, "robot.wpilog");
+    }
+
+    /**
+     * Set up logging to the given filename, choosing SD if present.
+     */
+    //TODO: replace Context with HardwareMap for use with robot
+    public void setup(Context hardwareMap, String filename) {
+        File out = chooseLogFile(hardwareMap, filename);
+        try {
+            fos = new FileOutputStream(out);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException("Unable to open log file: " + out, e);
+        }
+        startTime = System.nanoTime() / 1000;
+        try {
+            writeHeader("");
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write WPILOG header", e);
+        }
+    }
+
+    /**
+     * Picks removable SD card if mounted, otherwise primary external-files dir.
+     */
+    //TODO: replace Context with HardwareMap for use with robot
+    private File chooseLogFile(Context hwMap, String filename) {
+        File[] extDirs = hwMap.getExternalFilesDirs(null);
+        File sd = null;
+        for (File d : extDirs) {
+            if (d != null && Environment.isExternalStorageRemovable(d) && d.exists()) {
+                sd = d;
+                break;
+            }
+        }
+        File root = (sd != null) ? sd : extDirs[0];
+        return new File(root, filename);
     }
 
     private void writeHeader(String extra) throws IOException {
