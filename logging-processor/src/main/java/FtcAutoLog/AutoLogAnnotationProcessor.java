@@ -1,7 +1,6 @@
-package org.littletonrobotics.junction;
+package FtcAutoLog;
 
 import com.squareup.javapoet.ClassName;
-import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
@@ -31,7 +30,7 @@ import java.util.Set;
  * Annotation processor that generates an AutoLogged subclass which
  * overrides fields and methods to log via WpiLog.
  */
-@SupportedAnnotationTypes("org.littletonrobotics.junction.AutoLog")
+@SupportedAnnotationTypes("FtcLoggerTest.myapplication.AutoLog")
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 public class AutoLogAnnotationProcessor extends AbstractProcessor {
     // Adjust this to your WpiLog package

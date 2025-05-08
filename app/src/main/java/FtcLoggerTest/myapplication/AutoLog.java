@@ -1,4 +1,4 @@
-package org.littletonrobotics.junction;
+package FtcLoggerTest.myapplication;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

@@ -8,8 +8,6 @@ import android.widget.LinearLayout;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import org.littletonrobotics.junction.AutoLog;
-
 import java.io.IOException;
 import java.util.function.DoubleSupplier;
 
@@ -120,7 +118,6 @@ public class MainActivity extends AppCompatActivity {
     void stopLogging() {
         handler.removeCallbacks(logRunnable);
         handlerfunctions.removeCallbacks(logRunnableFunction);
-        TelemetryManager.getInstance().stop();
         try {
             WpiLog.getInstance().close();
         } catch (IOException e) {
