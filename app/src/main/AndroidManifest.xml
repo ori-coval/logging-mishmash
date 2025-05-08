@@ -16,7 +16,7 @@
         android:theme="@style/Theme.MyApplication"
         tools:targetApi="31">
         <activity
-            android:name="FtcLoggerTest.myapplication.MainActivity"
+            android:name="FtcLoggerTest.myapplication.MainActivityAutoLogged"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

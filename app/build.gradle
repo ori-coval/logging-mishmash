@@ -38,4 +38,7 @@ dependencies {
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core
     implementation 'org.slf4j:slf4j-android:1.7.36'
+
+    annotationProcessor project(":logging-processor")
+    annotationProcessor "com.squareup:javapoet:1.13.0"
 }

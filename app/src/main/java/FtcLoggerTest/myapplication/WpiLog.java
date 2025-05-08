@@ -148,7 +148,9 @@ public class WpiLog implements Closeable {
         }
     }
 
-    public void log(String name, long value){
+    public void log(String name, Object obj){}
+
+    public long log(String name, long value){
         if (!recordIDs.containsKey(name)) {
             try {
                 startEntry(getID(name), name, "int64", nowMicros());
@@ -162,6 +164,8 @@ public class WpiLog implements Closeable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        return value;
     }
 
     public void log(String name, float value){
@@ -180,7 +184,7 @@ public class WpiLog implements Closeable {
         }
     }
 
-    public void log(String name, double value){
+    public double log(String name, double value){
         if (!recordIDs.containsKey(name)) {
             try {
                 startEntry(getID(name), name, "double", nowMicros());
@@ -194,6 +198,8 @@ public class WpiLog implements Closeable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        return value;
     }
 
     public void log(String name, String value){
