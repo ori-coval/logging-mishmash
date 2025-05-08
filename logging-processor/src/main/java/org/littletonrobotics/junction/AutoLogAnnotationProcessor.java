@@ -23,6 +23,8 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -62,6 +64,11 @@ public class AutoLogAnnotationProcessor extends AbstractProcessor {
                 .addModifiers(Modifier.PUBLIC)
                 .addJavadoc("Auto-generated telemetry logging\n");
 
+
+        // collect supplier fields so we can make one constructor
+        List<String> supplierFields = new ArrayList<>();
+        List<String> supplierKeys = new ArrayList<>();
+
         // Fields
         for (Element fe : classElem.getEnclosedElements()) {
             if (fe.getKind() != ElementKind.FIELD) continue;
@@ -80,13 +87,30 @@ public class AutoLogAnnotationProcessor extends AbstractProcessor {
             if (!(k.isPrimitive() || (k == TypeKind.DECLARED && t.toString().equals("java.lang.String")) || k == TypeKind.ARRAY || isSupplier))
                 continue;
 
+            String key = orig + "." + fname;
             if (isSupplier) {
-                String key = orig + "." + fname;
-            }
-            else{
-                String key = orig + "." + fname;
+                supplierFields.add(fname);
+                supplierKeys.add(key);
+            } else {
                 toLog.addStatement("$T.getInstance().log($S, this.$L)", WPILOG, key, fname);
             }
+        }
+
+        if (!supplierFields.isEmpty()) {
+            MethodSpec.Builder ctor = MethodSpec.constructorBuilder()
+                    .addModifiers(Modifier.PUBLIC)
+                    .addStatement("super()");
+
+            for (int i = 0; i < supplierFields.size(); i++) {
+                String fname = supplierFields.get(i);
+                String key   = supplierKeys.get(i);
+                ctor.addStatement(
+                        "super.$L = SupplierLog.wrap($S, super.$L)",
+                        fname, key, fname
+                );
+            }
+
+            clsBuilder.addMethod(ctor.build());
         }
 
         // Methods
@@ -115,6 +139,7 @@ public class AutoLogAnnotationProcessor extends AbstractProcessor {
             // also log in toLog
 //            toLog.addStatement("$T.getInstance().log($S, this.$L())", WPILOG, key, mname);
         }
+
 
         clsBuilder.addMethod(toLog.build());
 

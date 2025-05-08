@@ -72,7 +72,6 @@ public class MainActivity extends AppCompatActivity {
                     y += Math.random() / 85;
                     yststic = y;
                     pose = new double[]{x, y, rotation};
-                    xsupplier.getAsDouble();
                     ((MainActivityAutoLogged) MainActivity.this).toLog();
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -89,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 try {
                     test();
+                    xsupplier.getAsDouble();
                     ((MainActivityAutoLogged) MainActivity.this).toLog();
                 } catch (Exception e) {
                     e.printStackTrace();
