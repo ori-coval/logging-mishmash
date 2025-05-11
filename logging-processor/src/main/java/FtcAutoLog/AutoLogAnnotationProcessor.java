@@ -12,6 +12,7 @@ import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
+import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
@@ -24,7 +25,6 @@ import javax.lang.model.type.TypeMirror;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -32,7 +32,8 @@ import java.util.Set;
  * Annotation processor that generates an AutoLogged subclass which
  * overrides fields and methods to log via WpiLog.
  */
-@SupportedAnnotationTypes("FtcLoggerTest.myapplication.Logging.AutoLog")
+@SupportedAnnotationTypes({"FtcLoggerTest.myapplication.Logging.AutoLog",
+        "FtcLoggerTest.myapplication.Logging.AutoLogAndPostToFtcDashboard"})
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 public class AutoLogAnnotationProcessor extends AbstractProcessor {
     // Adjust this to your WpiLog package
@@ -47,14 +48,17 @@ public class AutoLogAnnotationProcessor extends AbstractProcessor {
         for (TypeElement annotation : annotations) {
             for (Element e : roundEnv.getElementsAnnotatedWith(annotation)) {
                 if (e.getKind() == ElementKind.CLASS) {
-                    generate((TypeElement) e);
+                    boolean isPost = annotation.getQualifiedName().toString()
+                            .equals("FtcLoggerTest.myapplication.Logging.AutoLogAndPostToFtcDashboard");
+                    generate((TypeElement) e, isPost);
                 }
             }
         }
         return true;
     }
 
-    private void generate(TypeElement classElem) {
+
+    private void generate(TypeElement classElem, boolean postToFtcDashBoard) {
         String pkg = getPackageName(classElem);
         String orig = classElem.getSimpleName().toString();
         String autoName = orig + "AutoLogged";
@@ -99,7 +103,9 @@ public class AutoLogAnnotationProcessor extends AbstractProcessor {
                 supplierKeys.add(key);
             } else {
                 toLog.addStatement("$T.getInstance().log($S, this.$L)", WPILOG, key, fname);
-                toLog.addStatement("$T.getInstance().getTelemetry().addData($S, this.$L)", FTC_DASHBOARD, key, fname);
+                if (postToFtcDashBoard){
+                    toLog.addStatement("$T.getInstance().getTelemetry().addData($S, this.$L)", FTC_DASHBOARD, key, fname);
+                }
             }
         }
 
@@ -130,8 +136,8 @@ public class AutoLogAnnotationProcessor extends AbstractProcessor {
                     String fname = supplierFields.get(i);
                     String key = supplierKeys.get(i);
                     ctor.addStatement(
-                            "super.$L = $T.wrap($S, super.$L)",
-                            fname, SUPPLIER_LOG, key, fname
+                            "super.$L = $T.wrap($S, super.$L, $L)",
+                            fname, SUPPLIER_LOG, key, fname, postToFtcDashBoard
                     );
                 }
             }
@@ -149,7 +155,7 @@ public class AutoLogAnnotationProcessor extends AbstractProcessor {
             if (me.getKind() != ElementKind.METHOD) continue;
             ExecutableElement method = (ExecutableElement) me;
             Set<Modifier> mmods = method.getModifiers();
-//            if (!mmods.contains(Modifier.PUBLIC) || mmods.contains(Modifier.STATIC)) continue;
+            if (!mmods.contains(Modifier.PUBLIC) || mmods.contains(Modifier.STATIC)) continue;
 //            if (!method.getParameters().isEmpty()) continue;
             TypeMirror rt = method.getReturnType();
             TypeKind rtk = rt.getKind();
@@ -169,13 +175,18 @@ public class AutoLogAnnotationProcessor extends AbstractProcessor {
                 parmas = parmas.substring(1);
             }
 
+            String ftcDashboardAddData = "";
+            if(postToFtcDashBoard){
+                ftcDashboardAddData = "$T.getInstance().getTelemetry().addData($S, result)\", FTC_DASHBOARD, key";
+            }
+
             // override method
             MethodSpec override = MethodSpec.methodBuilder(mname)
                     .addAnnotation(Override.class)
                     .addModifiers(Modifier.PUBLIC)
                     .returns(rtn)
                     .addStatement("$T result = super.$L($L)", rtn, mname, parmas)
-                    .addStatement("$T.getInstance().getTelemetry().addData($S, result)", FTC_DASHBOARD, key)
+                    .addStatement(ftcDashboardAddData)
                     .addStatement("return $T.getInstance().log($S, result)", WPILOG, key)
                     .addParameters(paramList)
                     .build();
