@@ -12,7 +12,6 @@ import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
-import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
@@ -164,15 +163,15 @@ public class AutoLogAnnotationProcessor extends AbstractProcessor {
             String mname = method.getSimpleName().toString();
             TypeName rtn = TypeName.get(rt);
             String key = orig + "." + mname;
-            String parmas = "";
+            StringBuilder params = new StringBuilder();
             List<ParameterSpec> paramList = new ArrayList<>();
             for (VariableElement parameter : method.getParameters()) {
                 TypeName type = TypeName.get(parameter.asType());
                 paramList.add(ParameterSpec.builder(type, parameter.getSimpleName().toString()).build());
-                parmas = parmas + "," + parameter.getSimpleName().toString();
+                params.append(",").append(parameter.getSimpleName().toString());
             }
-            if (parmas.startsWith(",")) {
-                parmas = parmas.substring(1);
+            if (params.toString().startsWith(",")) {
+                params = new StringBuilder(params.substring(1));
             }
 
             String ftcDashboardAddData = "";
@@ -185,7 +184,7 @@ public class AutoLogAnnotationProcessor extends AbstractProcessor {
                     .addAnnotation(Override.class)
                     .addModifiers(Modifier.PUBLIC)
                     .returns(rtn)
-                    .addStatement("$T result = super.$L($L)", rtn, mname, parmas)
+                    .addStatement("$T result = super.$L($L)", rtn, mname, params.toString())
                     .addStatement(ftcDashboardAddData)
                     .addStatement("return $T.getInstance().log($S, result)", WPILOG, key)
                     .addParameters(paramList)
@@ -202,6 +201,7 @@ public class AutoLogAnnotationProcessor extends AbstractProcessor {
 
         // Write file
         try {
+            assert pkg != null;
             JavaFile.builder(pkg, clsBuilder.build()).build().writeTo(processingEnv.getFiler());
         } catch (IOException ex) {
             processingEnv.getMessager().printMessage(javax.tools.Diagnostic.Kind.ERROR,
