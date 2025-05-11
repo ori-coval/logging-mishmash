@@ -3,6 +3,7 @@ package FtcAutoLog;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.ParameterSpec;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
@@ -22,8 +23,8 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 
 import java.io.IOException;
-import java.net.InterfaceAddress;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -36,6 +37,7 @@ import java.util.Set;
 public class AutoLogAnnotationProcessor extends AbstractProcessor {
     // Adjust this to your WpiLog package
     private static final ClassName WPILOG = ClassName.get("FtcLoggerTest.myapplication.Logging", "WpiLog");
+    private static final ClassName FTC_DASHBOARD = ClassName.get("com.acmerobotics.dashboard", "FtcDashboard");
     private static final ClassName LOGGED = ClassName.get("FtcLoggerTest.myapplication.Logging", "Logged");
     private static final ClassName AUTO_LOG_MANAGER = ClassName.get("FtcLoggerTest.myapplication.Logging", "AutoLogManager");
     private static final ClassName SUPPLIER_LOG = ClassName.get("FtcLoggerTest.myapplication.Logging", "SupplierLog");
@@ -97,35 +99,58 @@ public class AutoLogAnnotationProcessor extends AbstractProcessor {
                 supplierKeys.add(key);
             } else {
                 toLog.addStatement("$T.getInstance().log($S, this.$L)", WPILOG, key, fname);
+                toLog.addStatement("$T.getInstance().getTelemetry().addData($S, this.$L)", FTC_DASHBOARD, key, fname);
             }
         }
 
-        MethodSpec.Builder ctor = MethodSpec.constructorBuilder()
-                .addModifiers(Modifier.PUBLIC)
-                .addStatement("super()");
+        //constructor
+        for (Element enclosed : classElem.getEnclosedElements()) {
+            if (enclosed.getKind() != ElementKind.CONSTRUCTOR) continue;
 
-        if (!supplierFields.isEmpty()) {
+            ExecutableElement constructorElem = (ExecutableElement) enclosed;
 
-            for (int i = 0; i < supplierFields.size(); i++) {
-                String fname = supplierFields.get(i);
-                String key   = supplierKeys.get(i);
-                ctor.addStatement(
-                        "super.$L = $T.wrap($S, super.$L)",
-                        fname, SUPPLIER_LOG, key, fname
-                );
+            List<ParameterSpec> paramList = new ArrayList<>();
+            List<String> paramNames = new ArrayList<>();
+
+            for (VariableElement param : constructorElem.getParameters()) {
+                String name = param.getSimpleName().toString();
+                TypeName type = TypeName.get(param.asType());
+                paramList.add(ParameterSpec.builder(type, name).build());
+                paramNames.add(name);
             }
+
+            MethodSpec.Builder ctor = MethodSpec.constructorBuilder()
+                    .addModifiers(Modifier.PUBLIC)
+                    .addParameters(paramList)
+                    .addStatement("super($L)", String.join(", ", paramNames));
+
+            // Inject supplier wrapping logic
+            if (!supplierFields.isEmpty()) {
+                for (int i = 0; i < supplierFields.size(); i++) {
+                    String fname = supplierFields.get(i);
+                    String key = supplierKeys.get(i);
+                    ctor.addStatement(
+                            "super.$L = $T.wrap($S, super.$L)",
+                            fname, SUPPLIER_LOG, key, fname
+                    );
+                }
+            }
+
+            // Register with AutoLogManager
+            ctor.addStatement("$T.register(this)", AUTO_LOG_MANAGER);
+
+            // Add the constructor to the class
+            clsBuilder.addMethod(ctor.build());
         }
 
-        ctor.addStatement("$T.register(this)", AUTO_LOG_MANAGER);
-        clsBuilder.addMethod(ctor.build());
 
         // Methods
         for (Element me : classElem.getEnclosedElements()) {
             if (me.getKind() != ElementKind.METHOD) continue;
             ExecutableElement method = (ExecutableElement) me;
             Set<Modifier> mmods = method.getModifiers();
-            if (!mmods.contains(Modifier.PUBLIC) || mmods.contains(Modifier.STATIC)) continue;
-            if (!method.getParameters().isEmpty()) continue;
+//            if (!mmods.contains(Modifier.PUBLIC) || mmods.contains(Modifier.STATIC)) continue;
+//            if (!method.getParameters().isEmpty()) continue;
             TypeMirror rt = method.getReturnType();
             TypeKind rtk = rt.getKind();
             if (!(rtk.isPrimitive() || (rtk == TypeKind.DECLARED && rt.toString().equals("java.lang.String"))))
@@ -133,18 +158,33 @@ public class AutoLogAnnotationProcessor extends AbstractProcessor {
             String mname = method.getSimpleName().toString();
             TypeName rtn = TypeName.get(rt);
             String key = orig + "." + mname;
+            String parmas = "";
+            List<ParameterSpec> paramList = new ArrayList<>();
+            for (VariableElement parameter : method.getParameters()) {
+                TypeName type = TypeName.get(parameter.asType());
+                paramList.add(ParameterSpec.builder(type, parameter.getSimpleName().toString()).build());
+                parmas = parmas + "," + parameter.getSimpleName().toString();
+            }
+            if (parmas.startsWith(",")) {
+                parmas = parmas.substring(1);
+            }
+
             // override method
             MethodSpec override = MethodSpec.methodBuilder(mname)
                     .addAnnotation(Override.class)
                     .addModifiers(Modifier.PUBLIC)
                     .returns(rtn)
-                    .addStatement("$T result = super.$L()", rtn, mname)
+                    .addStatement("$T result = super.$L($L)", rtn, mname, parmas)
+                    .addStatement("$T.getInstance().getTelemetry().addData($S, result)", FTC_DASHBOARD, key)
                     .addStatement("return $T.getInstance().log($S, result)", WPILOG, key)
+                    .addParameters(paramList)
                     .build();
+
+
             clsBuilder.addMethod(override);
             // also log in toLog
 //            toLog.addStatement("$T.getInstance().log($S, this.$L())", WPILOG, key, mname);
-        }   
+        }
 
 
         clsBuilder.addMethod(toLog.build());

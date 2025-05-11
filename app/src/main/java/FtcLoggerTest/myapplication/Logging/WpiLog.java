@@ -3,8 +3,14 @@ package FtcLoggerTest.myapplication.Logging;
 import android.content.Context;
 import android.os.Environment;
 
-import java.io.*;
-import java.nio.*;
+import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 
@@ -133,8 +139,9 @@ public class WpiLog implements Closeable {
     }
 
     // ─── public logging ──────────────────────────────────────────────────────
+// ─── Public Logging API ──────────────────────────────────────────────────
 
-    public void log(String name, boolean value){
+    public boolean log(String name, boolean value) {
         if (!recordIDs.containsKey(name)) {
             try {
                 startEntry(getID(name), name, "boolean", nowMicros());
@@ -148,11 +155,15 @@ public class WpiLog implements Closeable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        return value;
     }
 
-    public void log(String name, Object obj){}
+    public Object log(String name, Object obj) {
+        return obj;
+    }
 
-    public long log(String name, long value){
+    public long log(String name, long value) {
         if (!recordIDs.containsKey(name)) {
             try {
                 startEntry(getID(name), name, "int64", nowMicros());
@@ -170,7 +181,7 @@ public class WpiLog implements Closeable {
         return value;
     }
 
-    public void log(String name, float value){
+    public float log(String name, float value) {
         if (!recordIDs.containsKey(name)) {
             try {
                 startEntry(getID(name), name, "float", nowMicros());
@@ -184,9 +195,11 @@ public class WpiLog implements Closeable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        return value;
     }
 
-    public double log(String name, double value){
+    public double log(String name, double value) {
         if (!recordIDs.containsKey(name)) {
             try {
                 startEntry(getID(name), name, "double", nowMicros());
@@ -204,7 +217,7 @@ public class WpiLog implements Closeable {
         return value;
     }
 
-    public void log(String name, String value){
+    public String log(String name, String value) {
         if (!recordIDs.containsKey(name)) {
             try {
                 startEntry(getID(name), name, "string", nowMicros());
@@ -218,9 +231,11 @@ public class WpiLog implements Closeable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        return value;
     }
 
-    public void log(String name, boolean[] value){
+    public boolean[] log(String name, boolean[] value) {
         if (!recordIDs.containsKey(name)) {
             try {
                 startEntry(getID(name), name, "boolean[]", nowMicros());
@@ -234,9 +249,11 @@ public class WpiLog implements Closeable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        return value;
     }
 
-    public void log(String name, long[] value){
+    public long[] log(String name, long[] value) {
         if (!recordIDs.containsKey(name)) {
             try {
                 startEntry(getID(name), name, "int64[]", nowMicros());
@@ -250,9 +267,11 @@ public class WpiLog implements Closeable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        return value;
     }
 
-    public void log(String name, float[] value){
+    public float[] log(String name, float[] value) {
         if (!recordIDs.containsKey(name)) {
             try {
                 startEntry(getID(name), name, "float[]", nowMicros());
@@ -266,9 +285,11 @@ public class WpiLog implements Closeable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        return value;
     }
 
-    public void log(String name, double[] value){
+    public double[] log(String name, double[] value) {
         if (!recordIDs.containsKey(name)) {
             try {
                 startEntry(getID(name), name, "double[]", nowMicros());
@@ -282,9 +303,11 @@ public class WpiLog implements Closeable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        return value;
     }
 
-    public void log(String name, String[] value){
+    public String[] log(String name, String[] value) {
         if (!recordIDs.containsKey(name)) {
             try {
                 startEntry(getID(name), name, "String[]", nowMicros());
@@ -298,6 +321,8 @@ public class WpiLog implements Closeable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        return value;
     }
 
     // ─── INTERNAL LOGGING ────────────────────────────────────────────────────

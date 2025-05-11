@@ -18,7 +18,6 @@ import FtcLoggerTest.myapplication.Logging.WpiLog;
 @AutoLog
 public class MainActivity extends AppCompatActivity {
     boolean isLogging = false;
-
     // Handler on main thread for scheduling
     final Handler handler = new Handler(Looper.getMainLooper());
     final Handler handlerfunctions = new Handler(Looper.getMainLooper());
@@ -40,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        AutoLogManager.register(new MainActivityAutoLogged());
         // Vertical layout
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
@@ -62,22 +62,16 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(layout);
 
-        // Define the periodic logging task (every 1s)
+        // Define the periodic logging task (every 0.01s)
         logRunnable = new Runnable() {
             @Override
             public void run() {
-                try {
-//                    double rnd = Math.random() * 100;
-//                    WpiLog.getInstance().log("randomDouble", rnd);
-                    rotation += Math.PI / 500;
-                    x += Math.random() / 85;
-                    y += Math.random() / 85;
-                    yststic = y;
-                    pose = new double[]{x, y, rotation};
-                    AutoLogManager.periodic();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                rotation += Math.PI / 500;
+                x += Math.random() / 85;
+                y += Math.random() / 85;
+                yststic = y;
+                pose = new double[]{x, y, rotation};
+                AutoLogManager.periodic();
                 if (isLogging) {
                     handler.postDelayed(this, 10);
                 }
@@ -85,23 +79,19 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
+        // Define the periodic logging task (every 1s)
         logRunnableFunction = new Runnable() {
             @Override
             public void run() {
-                try {
-                    test(1,4);
-                    xsupplier.getAsDouble();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                test(1, 4);
+                xsupplier.getAsDouble();
+
                 if (isLogging) {
                     handlerfunctions.postDelayed(this, 1000);
                 }
 
             }
         };
-
-        WpiLog.getInstance().setup(this.getApplicationContext());
     }
 
     /**
@@ -138,7 +128,6 @@ public class MainActivity extends AppCompatActivity {
 
     int xsdv = 0;
 
-    //TODO: make logging work with param3eters
     public double test(double test, double test2) {
         xsdv++;
         double testValue = 1 + 3 + xsdv + test - test2;
