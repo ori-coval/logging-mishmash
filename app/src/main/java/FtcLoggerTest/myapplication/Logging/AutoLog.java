@@ -1,4 +1,4 @@
-package FtcLoggerTest.myapplication;
+package FtcLoggerTest.myapplication.Logging;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

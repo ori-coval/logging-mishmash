@@ -11,6 +11,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import java.io.IOException;
 import java.util.function.DoubleSupplier;
 
+import FtcLoggerTest.myapplication.Logging.AutoLog;
+import FtcLoggerTest.myapplication.Logging.AutoLogManager;
+import FtcLoggerTest.myapplication.Logging.WpiLog;
+
 @AutoLog
 public class MainActivity extends AppCompatActivity {
     boolean isLogging = false;
@@ -70,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
                     y += Math.random() / 85;
                     yststic = y;
                     pose = new double[]{x, y, rotation};
-                    ((MainActivityAutoLogged) MainActivity.this).toLog();
+                    AutoLogManager.periodic();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -85,9 +89,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 try {
-                    test();
+                    test(1,4);
                     xsupplier.getAsDouble();
-                    ((MainActivityAutoLogged) MainActivity.this).toLog();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -99,9 +102,6 @@ public class MainActivity extends AppCompatActivity {
         };
 
         WpiLog.getInstance().setup(this.getApplicationContext());
-
-//        TelemetryManager.getInstance().register(this);
-//        TelemetryManager.getInstance().start();
     }
 
     /**
@@ -138,9 +138,10 @@ public class MainActivity extends AppCompatActivity {
 
     int xsdv = 0;
 
-    public double test() {
+    //TODO: make logging work with param3eters
+    public double test(double test, double test2) {
         xsdv++;
-        double testValue = 1 + 3 + xsdv;
+        double testValue = 1 + 3 + xsdv + test - test2;
         return testValue + 3;
     }
 

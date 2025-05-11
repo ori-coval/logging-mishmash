@@ -1,4 +1,4 @@
-package FtcLoggerTest.myapplication;
+package FtcLoggerTest.myapplication.Logging;
 
 import android.content.Context;
 import android.os.Environment;
@@ -32,6 +32,8 @@ public class WpiLog implements Closeable {
         recordIDs = new HashMap<>();
         startTime = System.nanoTime() / 1000;
     }
+
+    public void register(Logged loggedClass){}
 
     /**
      * Set up logging to a file named 'robot.wpilog' in SD or internal.

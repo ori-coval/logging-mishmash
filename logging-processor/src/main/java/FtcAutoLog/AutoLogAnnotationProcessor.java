@@ -22,6 +22,7 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 
 import java.io.IOException;
+import java.net.InterfaceAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -30,11 +31,14 @@ import java.util.Set;
  * Annotation processor that generates an AutoLogged subclass which
  * overrides fields and methods to log via WpiLog.
  */
-@SupportedAnnotationTypes("FtcLoggerTest.myapplication.AutoLog")
+@SupportedAnnotationTypes("FtcLoggerTest.myapplication.Logging.AutoLog")
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 public class AutoLogAnnotationProcessor extends AbstractProcessor {
     // Adjust this to your WpiLog package
-    private static final ClassName WPILOG = ClassName.get("FtcLoggerTest.myapplication", "WpiLog");
+    private static final ClassName WPILOG = ClassName.get("FtcLoggerTest.myapplication.Logging", "WpiLog");
+    private static final ClassName LOGGED = ClassName.get("FtcLoggerTest.myapplication.Logging", "Logged");
+    private static final ClassName AUTO_LOG_MANAGER = ClassName.get("FtcLoggerTest.myapplication.Logging", "AutoLogManager");
+    private static final ClassName SUPPLIER_LOG = ClassName.get("FtcLoggerTest.myapplication.Logging", "SupplierLog");
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
@@ -56,6 +60,7 @@ public class AutoLogAnnotationProcessor extends AbstractProcessor {
         // Builder for the new class
         TypeSpec.Builder clsBuilder = TypeSpec.classBuilder(autoName)
                 .addModifiers(Modifier.PUBLIC)
+                .addSuperinterface(LOGGED)
                 .superclass(TypeName.get(classElem.asType()));
 
         // Build toLog method for fields
@@ -95,22 +100,24 @@ public class AutoLogAnnotationProcessor extends AbstractProcessor {
             }
         }
 
+        MethodSpec.Builder ctor = MethodSpec.constructorBuilder()
+                .addModifiers(Modifier.PUBLIC)
+                .addStatement("super()");
+
         if (!supplierFields.isEmpty()) {
-            MethodSpec.Builder ctor = MethodSpec.constructorBuilder()
-                    .addModifiers(Modifier.PUBLIC)
-                    .addStatement("super()");
 
             for (int i = 0; i < supplierFields.size(); i++) {
                 String fname = supplierFields.get(i);
                 String key   = supplierKeys.get(i);
                 ctor.addStatement(
-                        "super.$L = SupplierLog.wrap($S, super.$L)",
-                        fname, key, fname
+                        "super.$L = $T.wrap($S, super.$L)",
+                        fname, SUPPLIER_LOG, key, fname
                 );
             }
-
-            clsBuilder.addMethod(ctor.build());
         }
+
+        ctor.addStatement("$T.register(this)", AUTO_LOG_MANAGER);
+        clsBuilder.addMethod(ctor.build());
 
         // Methods
         for (Element me : classElem.getEnclosedElements()) {
@@ -137,7 +144,7 @@ public class AutoLogAnnotationProcessor extends AbstractProcessor {
             clsBuilder.addMethod(override);
             // also log in toLog
 //            toLog.addStatement("$T.getInstance().log($S, this.$L())", WPILOG, key, mname);
-        }
+        }   
 
 
         clsBuilder.addMethod(toLog.build());

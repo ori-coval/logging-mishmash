@@ -1,4 +1,4 @@
-package FtcLoggerTest.myapplication;
+package FtcLoggerTest.myapplication.Logging;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
