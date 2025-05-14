@@ -174,21 +174,20 @@ public class AutoLogAnnotationProcessor extends AbstractProcessor {
                 params = new StringBuilder(params.substring(1));
             }
 
-            String ftcDashboardAddData = "";
-            if(postToFtcDashBoard){
-                ftcDashboardAddData = "$T.getInstance().getTelemetry().addData($S, result)\", FTC_DASHBOARD, key";
-            }
-
             // override method
-            MethodSpec override = MethodSpec.methodBuilder(mname)
+            MethodSpec.Builder overrideBuilder = MethodSpec.methodBuilder(mname)
                     .addAnnotation(Override.class)
                     .addModifiers(Modifier.PUBLIC)
                     .returns(rtn)
                     .addStatement("$T result = super.$L($L)", rtn, mname, params.toString())
-                    .addStatement(ftcDashboardAddData)
                     .addStatement("return $T.getInstance().log($S, result)", WPILOG, key)
-                    .addParameters(paramList)
-                    .build();
+                    .addParameters(paramList);
+
+            if(postToFtcDashBoard){
+                overrideBuilder.addStatement("$T.getInstance().getTelemetry().addData($S, result)", FTC_DASHBOARD, key);
+            }
+
+            MethodSpec override  = overrideBuilder.build();
 
 
             clsBuilder.addMethod(override);

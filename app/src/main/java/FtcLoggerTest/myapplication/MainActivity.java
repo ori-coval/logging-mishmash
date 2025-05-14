@@ -12,10 +12,12 @@ import java.io.IOException;
 import java.util.function.DoubleSupplier;
 
 import FtcLoggerTest.myapplication.Logging.AutoLog;
+import FtcLoggerTest.myapplication.Logging.AutoLogAndPostToFtcDashboard;
 import FtcLoggerTest.myapplication.Logging.AutoLogManager;
 import FtcLoggerTest.myapplication.Logging.WpiLog;
 
-@AutoLog
+
+@AutoLogAndPostToFtcDashboard
 public class MainActivity extends AppCompatActivity {
     boolean isLogging = false;
     // Handler on main thread for scheduling
@@ -24,22 +26,14 @@ public class MainActivity extends AppCompatActivity {
     Runnable logRunnable;
     Runnable logRunnableFunction;
 
-    double dontLogTest = 4;
-    double rotation = 0;
-    double x = 0;
-    double y = 0;
-    double[] pose = new double[3];
-
-    public static double yststic = 0;
-
-    DoubleSupplier xsupplier = () -> x;
+    subsystem subsystem;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        subsystem = new subsystem();
 
-        AutoLogManager.register(new MainActivityAutoLogged());
         // Vertical layout
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
@@ -66,11 +60,11 @@ public class MainActivity extends AppCompatActivity {
         logRunnable = new Runnable() {
             @Override
             public void run() {
-                rotation += Math.PI / 500;
-                x += Math.random() / 85;
-                y += Math.random() / 85;
-                yststic = y;
-                pose = new double[]{x, y, rotation};
+                subsystem.rotation += Math.PI / 500;
+                subsystem.x += Math.random() / 85;
+                subsystem.y += Math.random() / 85;
+                subsystem.yststic = subsystem.y;
+                subsystem.pose = new double[]{subsystem.x, subsystem.y, subsystem.rotation};
                 AutoLogManager.periodic();
                 if (isLogging) {
                     handler.postDelayed(this, 10);
@@ -84,7 +78,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 test(1, 4);
-                xsupplier.getAsDouble();
+                subsystem.xsupplier.getAsDouble();
 
                 if (isLogging) {
                     handlerfunctions.postDelayed(this, 1000);
